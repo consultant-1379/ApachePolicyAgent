@@ -1,0 +1,32 @@
+#!/bin/bash
+
+##
+## Copyright (c) 2013 Ericsson AB, 2013 - 2014.
+##
+## All Rights Reserved. Reproduction in whole or in part is prohibited
+## without the written consent of the copyright owner.
+##
+## ERICSSON MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE
+## SUITABILITY OF THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING
+## BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. ERICSSON
+## SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A
+## RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+## DERIVATIVES.
+##
+##  This script will check the httpd Service Group Admin State
+##  It will return 0 if SG is UNLOCKED and 1 if it is LOCKED
+
+. /opt/ericsson/sso/bin/healthchecks/healthcheck_common.bsh
+
+SCRIPT_NAME=`${BASENAME} ${0}`
+
+check_sg_admin_state httpd
+
+if [ $? -eq 0 ]; then
+	info ${SCRIPT_NAME} "httpd Service Group Admin State is UNLOCKED"
+	exit 0
+else
+	info ${SCRIPT_NAME} "httpd Service Group Admin State is LOCKED"
+	exit 1
+fi

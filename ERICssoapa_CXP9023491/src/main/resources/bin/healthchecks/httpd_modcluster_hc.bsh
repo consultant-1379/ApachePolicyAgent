@@ -1,0 +1,64 @@
+#!/bin/bash
+
+##
+## Copyright (c) 2013 Ericsson AB, 2013 - 2014.
+##
+## All Rights Reserved. Reproduction in whole or in part is prohibited
+## without the written consent of the copyright owner.
+##
+## ERICSSON MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE
+## SUITABILITY OF THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING
+## BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. ERICSSON
+## SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A
+## RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+## DERIVATIVES.
+##
+##  This script will check the UI JBoss instance to make sure that the modcluster extension is loaded
+##  It will return 0 if org.jboss.as.modcluster is present and 1 if not
+
+. /opt/ericsson/sso/bin/healthchecks/healthcheck_common.bsh
+
+SCRIPT_NAME=`${BASENAME} ${0}`
+
+#///////////////////////////////////////////////////////////////
+# This function returns the UI JBoss IP address for this node
+# Arguments: None
+# Return: UI JBoss IP address
+#//////////////////////////////////////////////////////////////
+get_ui_jboss_ip()
+{
+	_this_node_ui_number_=`${ECHO} ${JBOSS_CLI} | ${AWK} -F_ {'print $3'}`
+
+	for _ui_jboss_instance_ in `${LITP} /inventory/deployment1/cluster1/ show -rl | ${GREP} instance/ip | ${GREP} UI`; do
+		${ECHO} ${_ui_jboss_instance_} | ${GREP} su_${_this_node_ui_number_}
+
+		if [ $? -eq 0 ]; then
+			_ui_jboss_ip_=`${LITP} ${_ui_jboss_instance_} show | ${GREP} address | ${AWK} -F\" {'print $2'}`
+			break
+		fi
+	done
+
+	${ECHO} ${_ui_jboss_ip_}
+}
+
+
+## MAIN
+
+JBOSS_CLI=`${FIND} /home/jboss/ | grep jboss-cli.sh | grep UI`
+OUTPUT_FROM_IP_FUNCTION=`get_ui_jboss_ip`
+JBOSS_IP=`${ECHO} ${OUTPUT_FROM_IP_FUNCTION} | ${AWK} {'print $2'}`
+
+JBOSS_CLI_OUTPUT=`${JBOSS_CLI} --controller=${JBOSS_IP} --connect <<JBOSS
+ls extension
+quit
+JBOSS`
+
+
+if [ `${ECHO} ${JBOSS_CLI_OUTPUT} | ${GREP} -c org.jboss.as.modcluster` -eq 1 ]; then
+	info ${SCRIPT_NAME} "org.jboss.as.modcluster is loaded in UI JBoss"
+	exit 0
+else
+	error ${SCRIPT_NAME} "org.jboss.as.modcluster is NOT loaded in UI JBoss"
+	exit 1
+fi

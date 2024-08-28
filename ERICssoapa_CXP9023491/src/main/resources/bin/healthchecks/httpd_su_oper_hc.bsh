@@ -1,0 +1,36 @@
+#!/bin/bash
+
+##
+## Copyright (c) 2013 Ericsson AB, 2013 - 2014.
+##
+## All Rights Reserved. Reproduction in whole or in part is prohibited
+## without the written consent of the copyright owner.
+##
+## ERICSSON MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE
+## SUITABILITY OF THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING
+## BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. ERICSSON
+## SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A
+## RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+## DERIVATIVES.
+##
+##  This script will check the httpd Service Unit Operational State
+##  It will return 0 if SU is ENABLED, 1 if it is any other state or if there is a problem checking the availabililty model
+
+. /opt/ericsson/sso/bin/healthchecks/healthcheck_common.bsh
+
+SCRIPT_NAME=`${BASENAME} ${0}`
+
+check_su_oper_state httpd
+RETURN_VALUE=$?
+
+if [ ${RETURN_VALUE} -eq 0 ]; then
+	info ${SCRIPT_NAME} "httpd Service Unit Operational State is ENABLED"
+	exit 0
+elif [ ${RETURN_VALUE} -eq 1 ]; then
+	info ${SCRIPT_NAME} "httpd Service Unit Operational State is not ENABLED"
+	exit 1
+else
+	error ${SCRIPT_NAME} "Problem checking the availabililty model which needs MS connectivity"
+	exit 1
+fi

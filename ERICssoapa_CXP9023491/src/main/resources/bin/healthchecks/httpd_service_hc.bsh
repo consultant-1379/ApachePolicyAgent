@@ -1,0 +1,91 @@
+#!/bin/bash
+
+##
+## Copyright (c) 2013 Ericsson AB, 2013 - 2014.
+##
+## All Rights Reserved. Reproduction in whole or in part is prohibited
+## without the written consent of the copyright owner.
+##
+## ERICSSON MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE
+## SUITABILITY OF THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING
+## BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. ERICSSON
+## SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A
+## RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+## DERIVATIVES.
+##
+##  This script will check the "httpd service status" and compare it with the httpd SU Presence State
+##  It will return 0 if service is running and SU is INSTANTIATED,
+##  It will return 0 if service is stopped and SU is UNINSTANTIATED and
+##  1 if SU is UNINSTANTIATED and service is running and vice versa and
+##  1 if problem checking the availabililty model
+
+. /opt/ericsson/sso/bin/healthchecks/healthcheck_common.bsh
+
+SCRIPT_NAME=`${BASENAME} ${0}`
+
+#///////////////////////////////////////////////////////////////
+# This function will get the Presence State of the httpd SU
+# Arguments: None
+# Return: Current Presence State of the httpd SU
+#//////////////////////////////////////////////////////////////
+get_httpd_presence_state()
+{
+	check_su_presence_state httpd
+	_return_value_=$?
+
+	if [ ${_return_value_} -eq 0 ]; then
+		_su_state_="INSTANTIATED"
+	elif [ ${_return_value_} -eq 1 ]; then
+		_su_state_="INVALID"
+	elif [ ${_return_value_} -eq 2 ]; then
+        	error ${SCRIPT_NAME} "Problem checking the availabililty model which needs MS connectivity"
+        	exit 1
+	elif [ ${_return_value_} -eq 3 ]; then
+		_su_state_="UNINSTANTIATED"
+	fi
+
+	${ECHO} ${_su_state_}
+}
+
+#///////////////////////////////////////////////////////////////
+# This function will get the service status of httpd
+# Arguments: None
+# Return: Current service status of httpd
+#//////////////////////////////////////////////////////////////
+get_httpd_service_status()
+{
+	_httpd_service_status_=`service httpd status`
+	_return_value_=$?
+
+	if [ `${ECHO} ${_httpd_service_status_} | ${GREP} -c running` -eq 1 ]; then
+		# Double check the return value to make sure they are in tandem
+		if [ ${_return_value_} -eq 0 ]; then
+			${ECHO} "RUNNING"
+		else
+			${ECHO} "STOPPED"
+		fi
+	else
+		${ECHO} "STOPPED"
+	fi
+}
+
+
+
+## MAIN
+
+HTTPD_SU_STATE=`get_httpd_presence_state`
+HTTPD_SERVICE_STATE=`get_httpd_service_status`
+
+# Check HTTPD_SU_STATE against the HTTPD_SERVICE_STATE
+
+if [[ ${HTTPD_SU_STATE} = "INSTANTIATED" ]] && [[ ${HTTPD_SERVICE_STATE} = "RUNNING" ]]; then
+	info ${SCRIPT_NAME} "httpd SU is INSTANTIATED and httpd service is RUNNING"
+	exit 0
+elif [[ ${HTTPD_SU_STATE} = "UNINSTANTIATED" ]] && [[ ${HTTPD_SERVICE_STATE} = "STOPPED" ]]; then
+	info ${SCRIPT_NAME} "httpd SU is UNINSTANTIATED and httpd service is STOPPED"
+	exit 0
+else
+	error ${SCRIPT_NAME} "Mismatch between httpd SU status and httpd service status"
+	exit 1
+fi

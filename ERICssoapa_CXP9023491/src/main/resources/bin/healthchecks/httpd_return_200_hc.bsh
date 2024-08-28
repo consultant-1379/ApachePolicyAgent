@@ -1,0 +1,32 @@
+#!/bin/bash
+
+##
+## Copyright (c) 2013 Ericsson AB, 2013 - 2014.
+##
+## All Rights Reserved. Reproduction in whole or in part is prohibited
+## without the written consent of the copyright owner.
+##
+## ERICSSON MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE
+## SUITABILITY OF THE SOFTWARE, EITHER EXPRESS OR IMPLIED, INCLUDING
+## BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. ERICSSON
+## SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A
+## RESULT OF USING, MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS
+## DERIVATIVES.
+##
+##  This script will check that the httpd service returns HTTP code 200 when curling the FQDN
+##  It will return 0 if response code is 200 and 1 if any other value
+
+. /opt/ericsson/sso/bin/healthchecks/healthcheck_common.bsh
+
+SCRIPT_NAME=`${BASENAME} ${0}`
+
+RETURN_VALUE=`${CURL} -s -o /dev/null -w "%{http_code}" -L -k https://${UI_PRES_SERVER}/`
+
+if [ ${RETURN_VALUE} -eq 200 ]; then
+	info ${SCRIPT_NAME} "Curl to ${UI_PRES_SERVER} is successful"
+	exit 0
+else
+	error ${SCRIPT_NAME} "Curl to ${UI_PRES_SERVER} has failed"
+	exit 1
+fi
